@@ -1,14 +1,19 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-
+from pymongo import MongoClient
+from datetime import datetime, timezone
 import pandas as pd
 import joblib
 import json
 import io
 
+client = MongoClient(
+    'mongodb+srv://salaudeensalu:9535443020@cluster0.8r5k7tl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
+db = client['churn_analysis']
+predictions_collection = db['predictions']
+
 app = Flask(__name__)
 CORS(app)
-
 # Load artifacts when the app starts
 try:
     # Load the model
@@ -60,6 +65,9 @@ def prepare_input_data(data):
         if payment.lower() == "cash on delivery":
             payment = "Cash on Delivery"  # Exact match
         input_data[f'PreferredPaymentMode_{payment}'] = 1
+        
+        
+    print(input_data)    
 
     return input_data
 
@@ -68,7 +76,8 @@ def prepare_input_data(data):
 def predict_churn():
     try:
         data = request.json
-        
+        print("json",data)
+
         # Prepare input data
         input_data = prepare_input_data(data)
 
@@ -85,6 +94,15 @@ def predict_churn():
         prediction = model.predict(scaled_input)
         probability = model.predict_proba(scaled_input)[0][1]
 
+        record = {
+            'type': 'single',
+            'data': data,
+            'prediction': int(prediction[0]),  # ✅ Cast to int
+            'probability': float(probability),  # ✅ Already float, safe
+            'timestamp': datetime.now(timezone.utc)
+        }
+        predictions_collection.insert_one(record)
+
         return jsonify({
             'prediction': 'Yes' if prediction[0] == 1 else 'No',
             'probability': float(probability),
@@ -94,17 +112,18 @@ def predict_churn():
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
 
+
 @app.route('/predict_bulk_churn', methods=['POST'])
 def predict_bulk_churn():
     try:
         # Check if a file was uploaded
         if 'file' not in request.files:
             return jsonify({'status': 'error', 'message': 'No file uploaded'})
-        
+
         file = request.files['file']
         if file.filename == '':
             return jsonify({'status': 'error', 'message': 'No selected file'})
-        
+
         # Read the file based on extension
         if file.filename.endswith('.csv'):
             df = pd.read_csv(io.StringIO(file.stream.read().decode('utf-8')))
@@ -115,27 +134,27 @@ def predict_bulk_churn():
                 'status': 'error',
                 'message': 'Unsupported file format. Please upload CSV or Excel (XLSX/XLS)'
             })
-        
+
         results = []
         churn_count = 0
         probabilities = []
         error_count = 0
-        
+
         # Process each row
         for _, row in df.iterrows():
             try:
                 # Prepare input data
                 input_data = prepare_input_data(row.to_dict())
-                
+
                 # Scale and predict
                 scaled_input = sc.transform(input_data)
                 prediction = model.predict(scaled_input)
                 probability = model.predict_proba(scaled_input)[0][1]
-                
+
                 if prediction[0] == 1:
                     churn_count += 1
                 probabilities.append(probability)
-                
+
                 results.append({
                     'customer_id': row.get('customer_id', ''),
                     'prediction': 'Yes' if prediction[0] == 1 else 'No',
@@ -150,12 +169,13 @@ def predict_bulk_churn():
                     'probability': 0,
                     'status': f'error: {str(e)}'
                 })
-        
+
         # Calculate analytics
         total_records = len(results)
         success_count = total_records - error_count
-        churn_rate = (churn_count / success_count * 100) if success_count > 0 else 0
-        
+        churn_rate = (churn_count / success_count *
+                      100) if success_count > 0 else 0
+
         # Probability distribution
         prob_series = pd.Series(probabilities)
         prob_stats = {
@@ -165,21 +185,35 @@ def predict_bulk_churn():
             'max': prob_series.max(),
             'std_dev': prob_series.std()
         }
-        
+
+        bulk_records = []
+        for result in results:
+            if result['status'] == 'success':
+                bulk_records.append({
+                    'type': 'bulk',
+                    'customer_id': result['customer_id'],
+                 
+                    'prediction': int(result['prediction'] == 'Yes'),
+                    'probability': float(result['probability']),
+                    'timestamp': datetime.utcnow()
+                })
+        if bulk_records:
+            predictions_collection.insert_many(bulk_records)
+
         # Risk segmentation
         risk_segments = {
             'low_risk': len([p for p in probabilities if p < 0.3]),
             'medium_risk': len([p for p in probabilities if 0.3 <= p < 0.7]),
             'high_risk': len([p for p in probabilities if p >= 0.7])
         }
-        
+
         # Top features analysis (example - would need your model's feature importance)
         top_features = [
             {'feature': 'Tenure', 'importance': 0.25},
             {'feature': 'SatisfactionScore', 'importance': 0.20},
             {'feature': 'WarehouseToHome', 'importance': 0.15}
         ]
-        
+
         return jsonify({
             'results': results,
             'analytics': {
@@ -201,68 +235,36 @@ def predict_bulk_churn():
             },
             'status': 'success'
         })
-        
+
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
 
-# @app.route('/predict_bulk_churn', methods=['POST'])
-# def predict_bulk_churn():
-#     try:
-#         # Check if a file was uploaded
-#         if 'file' not in request.files:
-#             return jsonify({'status': 'error', 'message': 'No file uploaded'})
-        
-#         file = request.files['file']
-#         if file.filename == '':
-#             return jsonify({'status': 'error', 'message': 'No selected file'})
-        
-#         # Read the file based on extension
-#         if file.filename.endswith('.csv'):
-#             df = pd.read_csv(io.StringIO(file.stream.read().decode('utf-8')))
-#         elif file.filename.endswith(('.xlsx', '.xls')):
-#             df = pd.read_excel(file)
-#         else:
-#             return jsonify({
-#                 'status': 'error',
-#                 'message': 'Unsupported file format. Please upload CSV or Excel (XLSX/XLS)'
-#             })
-        
-#         results = []
-        
-#         # Process each row
-#         for _, row in df.iterrows():
-#             try:
-#                 # Prepare input data
-#                 input_data = prepare_input_data(row.to_dict())
-                
-#                 # Scale and predict
-#                 scaled_input = sc.transform(input_data)
-#                 prediction = model.predict(scaled_input)
-#                 probability = model.predict_proba(scaled_input)[0][1]
-                
-#                 results.append({
-#                     'customer_id': row.get('customer_id', ''),
-#                     'prediction': 'Yes' if prediction[0] == 1 else 'No',
-#                     'probability': float(probability),
-#                     'status': 'success'
-#                 })
-#             except Exception as e:
-#                 results.append({
-#                     'customer_id': row.get('customer_id', ''),
-#                     'prediction': '',
-#                     'probability': 0,
-#                     'status': f'error: {str(e)}'
-#                 })
-        
-#         return jsonify({
-#             'results': results,
-#             'total_records': len(results),
-#             'successful_predictions': sum(1 for r in results if r['status'] == 'success'),
-#             'status': 'success'
-#         })
-        
-#     except Exception as e:
-#         return jsonify({'status': 'error', 'message': str(e)})
+
+@app.route('/analytics', methods=['GET'])
+def get_analytics():
+    # Total predictions
+    total = predictions_collection.count_documents({})
+
+    # Churn rate
+    churn_count = predictions_collection.count_documents({'prediction': 1})
+    churn_rate = (churn_count / total) * 100 if total > 0 else 0
+
+    # Daily trends
+    daily_data = list(predictions_collection.aggregate([
+        {"$group": {
+            "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}},
+            "count": {"$sum": 1},
+            "churns": {"$sum": {"$cond": [{"$eq": ["$prediction", 1]}, 1, 0]}}
+        }},
+        {"$sort": {"_id": 1}}
+    ]))
+
+    return jsonify({
+        'total_predictions': total,
+        'churn_rate': round(churn_rate, 2),
+        'daily_trends': daily_data,
+        'status': 'success'
+    })
 
 
 if __name__ == '__main__':
