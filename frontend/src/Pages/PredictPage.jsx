@@ -11,6 +11,7 @@ function PredictPage() {
 
   // Single prediction form state
   const [formData, setFormData] = useState({
+    customer_id: 0,
     tenure: 0,
     warehouse_to_home: 0,
     num_devices: 0,
@@ -44,31 +45,38 @@ function PredictPage() {
     e.preventDefault();
     setIsLoading(true);
     const payload = {
-        ...formData,
-        tenure: Number(formData.tenure),
-        warehouse_to_home: Number(formData.warehouse_to_home),
-        num_devices: Number(formData.num_devices),
-        satisfaction_score: Number(formData.satisfaction_score),
-        city_tier: Number(formData.city_tier),
-        hour_spend_on_app: Number(formData.hour_spend_on_app),
-        num_address: Number(formData.num_address),
-        complain: Number(formData.complain),
-        order_amount_hike: Number(formData.order_amount_hike),
-        coupon_used: Number(formData.coupon_used),
-        order_count: Number(formData.order_count),
-        days_since_last_order: Number(formData.days_since_last_order),
-        cashback_amount: Number(formData.cashback_amount),
-        // Capitalize categorical values
-        gender: formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1),
-        marital_status: formData.marital_status.charAt(0).toUpperCase() + formData.marital_status.slice(1)
-      };
+      ...formData,
+      customer_id: Number(formData.customer_id),
+      tenure: Number(formData.tenure),
+      warehouse_to_home: Number(formData.warehouse_to_home),
+      num_devices: Number(formData.num_devices),
+      satisfaction_score: Number(formData.satisfaction_score),
+      city_tier: Number(formData.city_tier),
+      hour_spend_on_app: Number(formData.hour_spend_on_app),
+      num_address: Number(formData.num_address),
+      complain: Number(formData.complain),
+      order_amount_hike: Number(formData.order_amount_hike),
+      coupon_used: Number(formData.coupon_used),
+      order_count: Number(formData.order_count),
+      days_since_last_order: Number(formData.days_since_last_order),
+      cashback_amount: Number(formData.cashback_amount),
+      // Capitalize categorical values
+      gender:
+        formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1),
+      marital_status:
+        formData.marital_status.charAt(0).toUpperCase() +
+        formData.marital_status.slice(1),
+    };
 
     try {
       const response = await axios.post(
         "http://localhost:5002/predict_churn",
         payload
       );
-      setPredictions([response.data]);
+      setPredictions([{ 
+        customer_id: formData.customer_id,
+        ...response.data 
+      }]);
       toast.success("Prediction successful!");
     } catch (error) {
       toast.error(error.response?.data?.message || "Prediction failed");
@@ -165,6 +173,19 @@ function PredictPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Existing fields */}
             {/* Tenure */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Customer ID
+              </label>
+              <input
+                type="number"
+                name="customer_id"
+                value={formData.customer_id}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                required
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Tenure (months)
