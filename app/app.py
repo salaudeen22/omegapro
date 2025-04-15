@@ -25,45 +25,125 @@ try:
 except Exception as e:
     print(f"Error loading artifacts: {e}")
     raise e
-
 def prepare_input_data(data, include_customer_id=False):
     """Helper function to prepare input data for prediction"""
     input_data = pd.DataFrame(columns=feature_columns)
     input_data.loc[0] = 0  # Initialize with zeros
 
-    # Numeric features
-    numeric_map = {
+    # Unified field name mapping (handles both form and Excel column names)
+    field_mapping = {
+        # Numeric fields
         'tenure': 'Tenure',
+        'Tenure': 'Tenure',
+        'city_tier': 'CityTier',
+        'CityTier': 'CityTier',
         'warehouse_to_home': 'WarehouseToHome',
+        'WarehouseToHome': 'WarehouseToHome',
+        'hour_spend_on_app': 'HourSpendOnApp',
+        'HourSpendOnApp': 'HourSpendOnApp',
         'num_devices': 'NumberOfDeviceRegistered',
-        'satisfaction_score': 'SatisfactionScore'
+        'NumberOfDeviceRegistered': 'NumberOfDeviceRegistered',
+        'satisfaction_score': 'SatisfactionScore',
+        'SatisfactionScore': 'SatisfactionScore',
+        'num_address': 'NumberOfAddress',
+        'NumberOfAddress': 'NumberOfAddress',
+        'complain': 'Complain',
+        'Complain': 'Complain',
+        'order_amount_hike': 'OrderAmountHikeFromlastYear',
+        'OrderAmountHikeFromlastYear': 'OrderAmountHikeFromlastYear',
+        'coupon_used': 'CouponUsed',
+        'CouponUsed': 'CouponUsed',
+        'order_count': 'OrderCount',
+        'OrderCount': 'OrderCount',
+        'days_since_last_order': 'DaySinceLastOrder',
+        'DaySinceLastOrder': 'DaySinceLastOrder',
+        'cashback_amount': 'CashbackAmount',
+        'CashbackAmount': 'CashbackAmount',
+        
+        # Categorical fields
+        'preferred_login_device': 'PreferredLoginDevice',
+        'PreferredLoginDevice': 'PreferredLoginDevice',
+        'payment_mode': 'PreferredPaymentMode',
+        'PreferredPaymentMode': 'PreferredPaymentMode',
+        'gender': 'Gender',
+        'Gender': 'Gender',
+        'preferred_order_category': 'PreferedOrderCat',
+        'PreferedOrderCat': 'PreferedOrderCat',
+        'marital_status': 'MaritalStatus',
+        'MaritalStatus': 'MaritalStatus'
     }
 
-    for api_name, model_name in numeric_map.items():
-        if api_name in data:
-            input_data[model_name] = data[api_name]
+    # Process numeric fields
+    for source_name, target_name in field_mapping.items():
+        if source_name in data and target_name in feature_columns:
+            try:
+                # Skip categorical fields (handled below)
+                if target_name in ['Tenure', 'CityTier', 'WarehouseToHome', 'HourSpendOnApp',
+                                  'NumberOfDeviceRegistered', 'SatisfactionScore', 'NumberOfAddress',
+                                  'Complain', 'OrderAmountHikeFromlastYear', 'CouponUsed',
+                                  'OrderCount', 'DaySinceLastOrder', 'CashbackAmount']:
+                    input_data[target_name] = float(data[source_name])
+            except (ValueError, TypeError):
+                input_data[target_name] = 0
 
-    # Handle categorical features
-    if 'gender' in data:
-        gender = data['gender'].title()
-        input_data[f'Gender_{gender}'] = 1
+    # Process categorical fields
+    categorical_mappings = {
+        'PreferredLoginDevice': {
+            'Mobile Phone': 'Mobile Phone',
+            'Computer': 'Computer',
+            'Phone': 'Phone'
+        },
+        'PreferredPaymentMode': {
+            'Credit Card': 'Credit Card',
+            'Debit Card': 'Debit Card',
+            'Cash on Delivery': 'Cash on Delivery',
+            'Digital Wallet': 'E wallet',
+            'UPI': 'UPI',
+            'COD': 'Cash on Delivery',
+            'CC': 'Credit Card'
+        },
+        'Gender': {
+            'Male': 'Male',
+            'Female': 'Female'
+        },
+        'PreferedOrderCat': {
+            'Laptop & Accessory': 'Laptop & Accessory',
+            'Mobile': 'Mobile',
+            'Fashion': 'Fashion',
+            'Grocery': 'Grocery',
+            'Mobile Phone': 'Mobile',
+            'Others': 'Others'
+        },
+        'MaritalStatus': {
+            'Single': 'Single',
+            'Married': 'Married',
+            'Divorced': 'Divorced'
+        }
+    }
 
-    if 'marital_status' in data:
-        status = data['marital_status'].title()
-        input_data[f'MaritalStatus_{status}'] = 1
+    for category, values in categorical_mappings.items():
+        source_fields = [k for k,v in field_mapping.items() if v == category]
+        for source_field in source_fields:
+            if source_field in data:
+                value = str(data[source_field]).strip().title()
+                mapped_value = values.get(value, None)
+                if mapped_value:
+                    col_name = f"{category}_{mapped_value}"
+                    if col_name in input_data.columns:
+                        input_data[col_name] = 1
 
-    if 'payment_mode' in data:
-        payment = data['payment_mode']
-        if payment.lower() == "cash on delivery":
-            payment = "Cash on Delivery"
-        input_data[f'PreferredPaymentMode_{payment}'] = 1
-    
-    # Only include CustomerID if explicitly requested (for bulk predictions)
+    # Include CustomerID if requested
     if include_customer_id:
-        if 'CustomerID' in data:
-            input_data['CustomerID'] = data['CustomerID']
-        elif 'customer_id' in data:
-            input_data['CustomerID'] = data['customer_id']
+        customer_id = data.get('customer_id', data.get('CustomerID', 0))
+        input_data['CustomerID'] = int(customer_id) if str(customer_id).isdigit() else 0
+
+    # Fill missing values with 0 for numeric columns
+    input_data.fillna(0, inplace=True)
+
+    # Debug print - show only non-zero columns
+    non_zero_cols = input_data.columns[(input_data != 0).any(axis=0)]
+    print("Prepared input data (non-zero columns):")
+    print(input_data[non_zero_cols].to_string())
 
     return input_data
 
