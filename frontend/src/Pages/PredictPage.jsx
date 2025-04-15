@@ -44,6 +44,15 @@ function PredictPage() {
   const handleSingleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    if (formData.satisfaction_score < 1 || formData.satisfaction_score > 5) {
+      toast.error("Satisfaction score must be between 1-5");
+      return;
+    }
+    
+    if (formData.num_devices < 1) {
+      toast.error("Number of devices must be at least 1");
+      return;
+    }
     const payload = {
       ...formData,
       customer_id: Number(formData.customer_id),
@@ -73,10 +82,12 @@ function PredictPage() {
         "http://localhost:5002/predict_churn",
         payload
       );
-      setPredictions([{ 
-        customer_id: formData.customer_id,
-        ...response.data 
-      }]);
+      setPredictions([
+        {
+          customer_id: formData.customer_id,
+          ...response.data,
+        },
+      ]);
       toast.success("Prediction successful!");
     } catch (error) {
       toast.error(error.response?.data?.message || "Prediction failed");
@@ -195,6 +206,35 @@ function PredictPage() {
                 name="tenure"
                 value={formData.tenure}
                 onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Satisfaction Score (1-5)
+              </label>
+              <input
+                type="number"
+                name="satisfaction_score"
+                value={formData.satisfaction_score}
+                onChange={handleChange}
+                min="1"
+                max="5"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Number of Devices Registered (min 1)
+              </label>
+              <input
+                type="number"
+                name="num_devices"
+                value={formData.num_devices}
+                onChange={handleChange}
+                min="1"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 required
               />
