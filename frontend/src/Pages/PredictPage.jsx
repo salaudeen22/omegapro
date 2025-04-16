@@ -183,108 +183,108 @@ function PredictPage() {
         <form onSubmit={handleSingleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Existing fields */}
-            {/* Tenure */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Customer ID
-              </label>
-              <input
-                type="number"
-                name="customer_id"
-                value={formData.customer_id}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tenure (months)
-              </label>
-              <input
-                type="number"
-                name="tenure"
-                value={formData.tenure}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Satisfaction Score (1-5)
-              </label>
-              <input
-                type="number"
-                name="satisfaction_score"
-                value={formData.satisfaction_score}
-                onChange={handleChange}
-                min="1"
-                max="5"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Number of Devices Registered (min 1)
-              </label>
-              <input
-                type="number"
-                name="num_devices"
-                value={formData.num_devices}
-                onChange={handleChange}
-                min="1"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Gender
-              </label>
-              <select
-                name="gender"
-                value={formData.gender}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              >
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Marital Status
-              </label>
-              <select
-                name="marital_status"
-                value={formData.marital_status}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              >
-                <option value="single">Single</option>
-                <option value="married">Married</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Payment Mode
-              </label>
-              <select
-                name="payment_mode"
-                value={formData.payment_mode}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              >
-                <option value="Credit Card">Credit Card</option>
-                <option value="Debit Card">Debit Card</option>
-                <option value="Cash on Delivery">Cash on Delivery</option>
-                <option value="Digital Wallet">Digital Wallet</option>
-              </select>
-            </div>
+       
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Customer ID <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                    type="number"
+                    name="customer_id"
+                    value={formData.customer_id}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tenure (months) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                    type="number"
+                    name="tenure"
+                    value={formData.tenure}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Satisfaction Score (1-5) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                    type="number"
+                    name="satisfaction_score"
+                    value={formData.satisfaction_score}
+                    onChange={handleChange}
+                    min="1"
+                    max="5"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Number of Devices Registered (min 1) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                    type="number"
+                    name="num_devices"
+                    value={formData.num_devices}
+                    onChange={handleChange}
+                    min="1"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Gender <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    >
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Marital Status <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                    name="marital_status"
+                    value={formData.marital_status}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    >
+                    <option value="single">Single</option>
+                    <option value="married">Married</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Payment Mode <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                    name="payment_mode"
+                    value={formData.payment_mode}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    >
+                    <option value="Credit Card">Credit Card</option>
+                    <option value="Debit Card">Debit Card</option>
+                    <option value="Cash on Delivery">Cash on Delivery</option>
+                    <option value="Digital Wallet">Digital Wallet</option>
+                    </select>
+                  </div>
 
-            {/* Warehouse to Home */}
+                  {/* Warehouse to Home */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Warehouse to Home Distance (km)
@@ -329,6 +329,7 @@ function PredictPage() {
                 value={formData.hour_spend_on_app}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
+
                 required
               />
             </div>
